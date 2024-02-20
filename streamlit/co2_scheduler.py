@@ -7,7 +7,6 @@ import streamlit as st
 sys.path.append("..")
 from src.plotting import plot_prediction
 
-
 # Mock data - replace this with model prediction
 time_axis = pd.date_range("2024-02-20", periods=24, freq="H")
 co2_predictions = np.sin(2*np.pi*np.arange(24)/24)**2
@@ -69,7 +68,8 @@ def generate_task(task_id):
 
 
 st.title("Task list")
-
+date = st.date_input('Select date')
+                           
 for task in st.session_state["tasks"]:
     task_data = generate_task(task)
     task_collection.append(task_data)
