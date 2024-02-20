@@ -1,21 +1,19 @@
-import numpy as np
+import plotly.express as px
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 
 
 def plot_prediction(x, y):
-    fig, ax = plt.subplots(figsize=(6, 2))
-    # plot only the outline of the polygon, and capture the result
-    poly, = ax.fill(x, y, facecolor='none')
-    # get the extent of the axes
-    xmin, xmax = ax.get_xlim()
-    ymin, ymax = ax.get_ylim()
-    # create a dummy image
-    img_data = np.arange(ymin, ymax, (ymax-ymin)/100.)
-    img_data = img_data.reshape(img_data.size, 1)
+    cmap = plt.get_cmap("RdYlGn_r")
 
-    # plot and clip the image
-    im = ax.imshow(img_data, aspect='auto', origin='lower', cmap="RdYlGn", extent=[
-        xmin, xmax, ymin, ymax], vmin=y.min(), vmax=y.max())
+    y_scaled = (y-np.min(y))/(np.max(y)-np.min(y))
 
-    im.set_clip_path(poly)
+    plotly_colormap = [
+        f'rgb{tuple(int(256 * x_) for x_ in cmap(y_)[:-1])}' for y_ in y_scaled]
+
+    fig = px.bar(x=x, y=y, color=y,
+                color_discrete_sequence=plotly_colormap)\
+                    .update_layout(showlegend=False)\
+                   
     return fig

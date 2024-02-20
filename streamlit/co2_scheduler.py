@@ -1,25 +1,50 @@
 import sys
 import uuid
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.express as px
 import datetime
+import joblib
+import time
+import requests
+
+import plotly.io as pio
+pio.templates.default = 'plotly' 
+
+
 import streamlit as st
+
 sys.path.append("..")
 from src.plotting import plot_prediction
-from src.tasks import add_task, remove_task, generate_task
 
-# Mock data - replace this with model prediction
-time_axis = pd.date_range("2024-02-20", periods=24, freq="H")
-co2_predictions = np.sin(2*np.pi*np.arange(24)/24)**2
+
+
+def predict():
+    # Mock data - replace this with actual weather forecast
+    df = pd.read_csv("../data/combined_data.csv")
+    df = df.iloc[-24*3:] # Take last three days of training data
+
+    features = [key for key in df if "wind" in key] + ["month", "hour"]
+    model = joblib.load("../models/xgb_1708455353.pkl")
+    co2_predictions = model.predict(df[features])
+    time_axis = df["dt"]
+    return time_axis, co2_predictions
 
 # Title
 st.title("CO2 Emissions Predictor")
+if st.button("Make prediction"):
+    with st.spinner('AI magic is happening...'):
+        time.sleep(3)
+        st.success('Done! 🔥')
+    time_axis, co2_predictions = predict()
+    
+    # Plot the CO2 emissions over the next 24 hours
+    st.subheader("g CO2/kWh prediction for the next 3 days")
 
-# Plot the CO2 emissions over the next 24 hours
-st.subheader("g CO2/kWh prediction for the next 24 hours")
-fig = plot_prediction(time_axis, co2_predictions)
-st.pyplot(fig)
+    fig = plot_prediction(time_axis, co2_predictions)
+    st.plotly_chart(fig)
 
 
 # in units of kW: https://www.daftlogic.com/information-appliance-power-consumption.htm
