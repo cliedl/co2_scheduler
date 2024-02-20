@@ -11,7 +11,7 @@ with open('API_key.key') as f:
 states = {
     'Hessen': ['Frankfurt am Main', 'Wiesbaden', 'Kassel', 'Darmstadt', 'Offenbach am Main'],
     'Brandenburg': ['Potsdam', 'Cottbus', 'Brandenburg an der Havel', 'Frankfurt', 'Oranienburg'],
-    'Niederschsen': ['Hanover', 'Braunschweig', 'Osnabrück', 'Oldenburg', 'Göttingen'],
+    'Niedersachsen': ['Hanover', 'Braunschweig', 'Osnabrück', 'Oldenburg', 'Göttingen'],
     'Bayern': ['Munich', 'Nuremberg', 'Augsburg', 'Regensburg', 'Ingolstadt'],
     'Rheinland-Pfalz': ['Mainz', 'Ludwigshafen am Rhein', 'Koblenz', 'Trier', 'Kaiserslautern'],
     'Mecklenburg-Vorpommern': ['Rostock', 'Schwerin', 'Neubrandenburg', 'Stralsund', 'Greifswald'],
