@@ -47,19 +47,19 @@ def get_weather(city):
     return df
 
 
-def get_wether_for_state(state):
+def get_weather_for_state(state):
     df = get_weather(states[state][0])
     for i in range(1, len(states[state])):
         df = pd.concat([df, get_weather(states[state][i])], axis=1)
     return df.aggregate(['mean'], axis=1).rename(columns={'mean': f'wind_speed_{state}'})
 
 
-def get_wether_df():
+def get_weather_df():
     for i in states:
         if i == 'Hessen':
-            weather_df = get_wether_for_state(i)
+            weather_df = get_weather_for_state(i)
         else:
-            weather_df = pd.concat([weather_df, get_wether_for_state(i)], axis=1)
+            weather_df = pd.concat([weather_df, get_weather_for_state(i)], axis=1)
     return weather_df
 
 
@@ -77,5 +77,5 @@ def do_interpolation(df):
 
 if __name__ == '__main__':
 
-    weather_df = get_wether_df()
+    weather_df = get_weather_df()
     hourly_weather_df = do_interpolation(weather_df)
