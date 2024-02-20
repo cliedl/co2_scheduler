@@ -3,9 +3,11 @@ import uuid
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import datetime
 import streamlit as st
 sys.path.append("..")
 from src.plotting import plot_prediction
+from src.tasks import add_task, remove_task, generate_task
 
 # Mock data - replace this with model prediction
 time_axis = pd.date_range("2024-02-20", periods=24, freq="H")
@@ -38,10 +40,8 @@ def add_task():
     element_id = uuid.uuid4()
     st.session_state["tasks"].append(str(element_id))
 
-
 def remove_task(task_id):
     st.session_state["tasks"].remove(str(task_id))
-
 
 def generate_task(task_id):
     task_container = st.empty()
@@ -74,10 +74,7 @@ for task in st.session_state["tasks"]:
     task_data = generate_task(task)
     task_collection.append(task_data)
 
-menu = st.columns(2)
-
-with menu[0]:
-    st.button("Add task", on_click=add_task)
+st.button("Add task", on_click=add_task)
 
 
 # def calculate_co2_impact(data):
@@ -88,13 +85,7 @@ if len(task_collection) > 0:
     data = pd.DataFrame(task_collection)
     data.loc[:, "consumption (kWh)"] = data["task_type"].apply(
         lambda x: co2_dictionary[x]) * data["task_duration"]
+    data.loc[:, "datetime"] = data["start_time"].apply(
+        lambda time: datetime.datetime.strptime(str(date)+'-'+str(time), "%Y-%m-%d-%H"))
+
     st.write(data.head())
-
-
-# # Compute CO2 emissions for selected time period
-# selected_period = time_axis[selected_time:selected_time+task_duration+1]
-# total_co2_emissions = np.sum(
-#     co2_predictions[selected_time:selected_time+task_duration+1])
-
-# st.write(
-#     f"Total CO2 emissions for selected period: {total_co2_emissions:.2f} gCO2")
