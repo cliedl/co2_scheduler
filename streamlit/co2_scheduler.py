@@ -51,14 +51,14 @@ st.title("CO2 Emissions Predictor :bulb:")
 # Button: Make prediction
 if st.button("Make prediction", key="make_predicion_button"):
     with st.spinner('AI magic is happening...'):
-        time.sleep(0)
+        time.sleep(3)
         st.session_state.df_prediction = predict()
         st.session_state.prediction_done = True
         st.success('Done! 🔥')
 
 if st.session_state.prediction_done == True:
-    # Plot the CO2 emissions over the next 24 hours
-    st.subheader("g CO2/kWh prediction for the next 3 days")
+    # Plot the CO2 emissions over the next 5 days
+    st.subheader("g CO2/kWh prediction for the next 5 days")
     
     fig = plot_prediction(st.session_state.df_prediction, st.session_state.data)
     st.plotly_chart(fig)
