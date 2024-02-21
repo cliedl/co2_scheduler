@@ -5,8 +5,8 @@ from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 
 
-with open('API_key.key') as f:
-    API_KEY = f.read()
+# with open('API_key.key') as f:
+#     API_KEY = f.read()
 
 states = {
     'Hessen': ['Frankfurt am Main', 'Wiesbaden', 'Kassel', 'Darmstadt', 'Offenbach am Main'],
