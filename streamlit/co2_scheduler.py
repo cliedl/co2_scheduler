@@ -14,7 +14,6 @@ import plotly.io as pio
 pio.templates.default = 'plotly' 
 
 import streamlit as st
-from streamlit_datetime_range_picker import datetime_range_picker
 #st.set_page_config(layout="wide")
 
 sys.path.append("..")
