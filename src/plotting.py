@@ -5,11 +5,9 @@ import pandas as pd
 import numpy as np
 
 
-def get_tasks(df=None):
-    if df is None:
-        tasks = pd.read_csv('tasks.csv')
-    else:
-        tasks = df
+def get_tasks(tasks=None):
+    if tasks is None:
+        return []
 
     for task in tasks.task_type:
         date_time = datetime.datetime.fromisoformat(tasks[tasks.task_type == task].datetime.iloc[0])
