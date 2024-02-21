@@ -10,7 +10,8 @@ def get_tasks(tasks=None):
         return []
 
     for task in tasks.task_type:
-        date_time = datetime.datetime.fromisoformat(tasks[tasks.task_type == task].datetime.iloc[0])
+        #date_time = datetime.datetime.fromisoformat(tasks[tasks.task_type == task].datetime.iloc[0])
+        date_time = tasks[tasks.task_type==task].datetime.iloc[0]
         for i in range(tasks[tasks.task_type == task].task_duration.iloc[0]):
             tasks.loc[i + len(tasks)] = pd.NA
             tasks.loc[:, 'task_type'].iloc[-1] = task
