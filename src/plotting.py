@@ -4,7 +4,9 @@ import pandas as pd
 import numpy as np
 
 
-def plot_prediction(x, y):
+def plot_prediction(df):
+    x = df["time_axis"]
+    y = df["co2_predictions"]
     cmap = plt.get_cmap("RdYlGn_r")
 
     y_scaled = (y-np.min(y))/(np.max(y)-np.min(y))
