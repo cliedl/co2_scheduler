@@ -20,6 +20,8 @@ from streamlit_datetime_range_picker import datetime_range_picker
 sys.path.append("..")
 from src.plotting import plot_prediction
 from api import get_weather_df, do_interpolation
+import src.co2_dictionary
+from src.model import predict
 
 # in units of kW: https://www.daftlogic.com/information-appliance-power-consumption.htm
 co2_dictionary = {
@@ -29,6 +31,8 @@ co2_dictionary = {
     "A100 GPU": 0.5
 }
 
+
+# Initialize session states
 if 'prediction_done' not in st.session_state:
     st.session_state.prediction_done = None
 
@@ -43,29 +47,29 @@ if "data" not in st.session_state:
 
 
 
-def predict(fetch_data=False):
-    # Mock data - replace this with actual weather forecast
-    df = pd.read_csv("../data/combined_data.csv")
-    df = df.iloc[-24*3:] # Take last three days of training data
+# def predict(fetch_data=False):
+#     # Mock data - replace this with actual weather forecast
+#     df = pd.read_csv("../data/combined_data.csv")
+#     df = df.iloc[-24*3:] # Take last three days of training data
     
-    if fetch_data:
-        weather_df = get_weather_df()
-        hourly_weather_df = do_interpolation(weather_df)
-        hourly_weather_df.to_csv("../data/forecast_0.csv")
-    else:
-        hourly_weather_df = pd.read_csv("../data/forecast_0.csv")
+#     if fetch_data:
+#         weather_df = get_weather_df()
+#         hourly_weather_df = do_interpolation(weather_df)
+#         hourly_weather_df.to_csv("../data/forecast_0.csv")
+#     else:
+#         hourly_weather_df = pd.read_csv("../data/forecast_0.csv")
 
-    hourly_weather_df.loc[:, "datetime"] = pd.to_datetime(hourly_weather_df["time_unix"], unit='s')
-    hourly_weather_df.loc[:, 'month'] = hourly_weather_df['datetime'].dt.month
-    hourly_weather_df.loc[:, 'hour'] = hourly_weather_df['datetime'].dt.hour
+#     hourly_weather_df.loc[:, "datetime"] = pd.to_datetime(hourly_weather_df["time_unix"], unit='s')
+#     hourly_weather_df.loc[:, 'month'] = hourly_weather_df['datetime'].dt.month
+#     hourly_weather_df.loc[:, 'hour'] = hourly_weather_df['datetime'].dt.hour
 
-    features = [key for key in df if "wind" in key] + ["month", "hour"]
-    model = joblib.load("../models/xgb_1708455353.pkl")
-    co2_predictions = model.predict(hourly_weather_df[features])
-    time_axis = hourly_weather_df["datetime"]
-    df_prediction = pd.DataFrame({'time_axis': time_axis, 'co2_predictions':co2_predictions})
+#     features = [key for key in df if "wind" in key] + ["month", "hour"]
+#     model = joblib.load("../models/xgb_1708455353.pkl")
+#     co2_predictions = model.predict(hourly_weather_df[features])
+#     time_axis = hourly_weather_df["datetime"]
+#     df_prediction = pd.DataFrame({'time_axis': time_axis, 'co2_predictions':co2_predictions})
 
-    return df_prediction
+#     return df_prediction
 
 
 st.title("CO2 Emissions Predictor")
@@ -82,6 +86,9 @@ if st.session_state.prediction_done == True:
     
     fig = plot_prediction(st.session_state.df_prediction, st.session_state.data)
     st.plotly_chart(fig)
+
+
+
 
 def add_task():
     element_id = uuid.uuid4()
@@ -122,6 +129,7 @@ def generate_task(task_id):
 
 
 st.title("Task list")
+
 
 task_collection = [] 
 
@@ -172,20 +180,18 @@ if len(task_collection) > 0:
     data.loc[:, "worst CO2 impact (g)"] = [opt[2] for opt in optimized]
     st.session_state["data"] = data
     
+    st.subheader("Here is an optimized schedule:")
     st.write(data[["task_type", "datetime", "optimal datetime", "CO2 impact (g)", "optimized CO2 impact (g)"]])
 
     total_co2_optimized = data["optimized CO2 impact (g)"].sum()
     total_co2_worst_case = data["worst CO2 impact (g)"].sum()
     total_co2_selected = data["CO2 impact (g)"].sum()
 
-    st.write(f"By optimizing your task schedule, you can:")
-    st.write(f"reduce CO2 emissions by {total_co2_optimized-total_co2_selected} g!")
-    st.write(f"This is a reduction by {int(100-100*total_co2_selected/total_co2_optimized)} %!")
+    st.subheader(f"By optimizing your task schedule, you can:")
+    st.write(f"reduce CO2 emissions by {-(total_co2_optimized-total_co2_selected)/1e3:.2f} kg!")
+    st.write(f"This is a reduction by {-int(100-100*total_co2_selected/total_co2_optimized)} %!")
 
-    #st.write(list(optimized[0]), list(optimized[1]))
-    st.write(data.head())
-    st.write(data.dtypes)
-
+    st.subheader("test")
     val = (total_co2_selected-total_co2_worst_case)/(total_co2_optimized-total_co2_worst_case)
     x = np.linspace(0, 1, 101)
     x[x > val] = None
@@ -200,4 +206,6 @@ if len(task_collection) > 0:
     plt.tight_layout()
 
     st.pyplot(fig)
+    st.experimental_rerun() 
+
 
