@@ -36,6 +36,7 @@ def plot_prediction(df, tasks):
     fig = px.bar(
         x=x,
         y=y,
+        labels={"y": "g CO2 / kWh", "x": ""},
     )
     traces = get_tasks(tasks)
     for trace in traces:
