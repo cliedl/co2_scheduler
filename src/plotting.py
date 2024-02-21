@@ -5,30 +5,37 @@ import pandas as pd
 import numpy as np
 
 
-def get_tasks(df=None):
+def get_tasks(df=None) -> list:
+    """
+    Returns a list of tasks based on the input dataframe. If the dataframe is None, an empty list is returned.
+    If the dataframe is not None, creates a list of tasks with start times and durations based on the input dataframe.
+    """
     if df is None:
         return []
     else:
         tasks = df.copy()
     task_list = []
     for i in range(len(tasks)):
-        task_dict = {}
-        task_dict[tasks.task_type.iloc[i]] = list(tasks.iloc[i][['task_duration', 'datetime']])
-        task_list.append(task_dict)
-
-    for i in range(len(task_list)):
-        for key, value in task_list[i].items():
-            length = value[0]
-            date = value[1]
-            temp_list = []
-            for j in range(length):
-                temp_list.append(date + datetime.timedelta(hours=j))
-        task_list[i][key] = temp_list
+        task_list.append(
+            {
+                tasks.task_type.iloc[i]: [
+                    tasks.datetime.iloc[i] + datetime.timedelta(hours=j) for j in range(tasks.task_duration.iloc[i])
+                ],
+            }
+        )
 
     return task_list
 
 
-def plot_prediction(df, tasks):
+def plot_prediction(df: pd.DataFrame, tasks: pd.DataFrame) -> plt.figure:
+    """
+    Plot the CO2 predictions over time using the provided dataframe and tasks data.
+    Args:
+        df (pd.DataFrame): The dataframe containing the time axis and CO2 predictions.
+        tasks (pd.DataFrame): The tasks data to be used for plotting.
+    Returns:
+        plt.figure: The plot figure showing the CO2 predictions over time.
+    """
     x = df["time_axis"]
     y = df["co2_predictions"]
     fig = px.bar(
