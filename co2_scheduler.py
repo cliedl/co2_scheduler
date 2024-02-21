@@ -12,7 +12,7 @@ import plotly.io as pio
 pio.templates.default = 'plotly' 
 
 import streamlit as st
-#st.set_page_config(layout="wide")
+st.set_page_config(layout="wide")
 
 sys.path.append("..")
 from src.plotting import plot_prediction
@@ -103,7 +103,7 @@ def generate_task(task_id):
     return {"task_type": task_type, "task_duration": task_duration, "start_time": start_time, "start_date": start_date}
 
 # Task list
-st.title("Task list")
+st.subheader("Task list")
 task_collection = [] 
 
 for task in st.session_state["tasks"]:
@@ -148,33 +148,39 @@ if len(task_collection) > 0:
     st.session_state["data"] = data
 
     # Print optimized schedule
-    st.subheader("Here is an optimized schedule:")
-    st.write(data[["task_type", "datetime", "optimal datetime", "CO2 impact (g)", "optimized CO2 impact (g)"]])
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("##### This is your selected schedule:")
+        st.write(data[["task_type", "datetime", "CO2 impact (g)"]])
+        st.markdown("")
+        st.markdown("##### This is an optimized schedule:")
+        st.write(data[["task_type", "optimal datetime", "optimized CO2 impact (g)"]])
 
-    total_co2_optimized = data["optimized CO2 impact (g)"].sum()
-    total_co2_worst_case = data["worst CO2 impact (g)"].sum()
-    total_co2_selected = data["CO2 impact (g)"].sum()
+        total_co2_optimized = data["optimized CO2 impact (g)"].sum()
+        total_co2_worst_case = data["worst CO2 impact (g)"].sum()
+        total_co2_selected = data["CO2 impact (g)"].sum()
 
-    st.subheader(f"By optimizing your task schedule, you can:")
-    st.write(f"reduce CO2 emissions by {-(total_co2_optimized-total_co2_selected)/1e3:.2f} kg!")
-    st.write(f"This is a reduction by {-int(100-100*total_co2_selected/total_co2_optimized)} %!")
+    with col2:
+        st.markdown(f"##### By optimizing your task schedule, you can:")
+        st.write(f"reduce CO2 emissions by {-(total_co2_optimized-total_co2_selected)/1e3:.2f} kg!")
+        st.write(f"This is a reduction by {-int(100-100*total_co2_selected/total_co2_optimized)} %!")
 
-    # Plot optimization progress bar
-    st.subheader("Optimization progress")
-    val = (total_co2_selected-total_co2_worst_case)/(total_co2_optimized-total_co2_worst_case)
-    x = np.linspace(0, 1, 101)
-    x[x > val] = None
+        # Plot optimization progress bar
+        st.markdown("##### Optimization progress")
+        val = (total_co2_selected-total_co2_worst_case)/(total_co2_optimized-total_co2_worst_case)
+        x = np.linspace(0, 1, 101)
+        x[x > val] = None
 
-    image = np.tile(x, 10)
-    image = image.reshape((10, len(x)))
+        image = np.tile(x, 10)
+        image = image.reshape((10, len(x)))
 
-    fig, ax = plt.subplots()
-    ax.imshow(image, cmap="RdYlGn", vmin=0, vmax=1)
-    ax.set_xticks([])
-    ax.set_yticks([])
-    plt.tight_layout()
+        fig, ax = plt.subplots()
+        ax.imshow(image, cmap="RdYlGn", vmin=0, vmax=1)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        plt.tight_layout()
 
-    st.pyplot(fig)
+        st.pyplot(fig)
 
 
 # Rerun app if change in taks_collection is detected
