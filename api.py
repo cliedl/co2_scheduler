@@ -28,33 +28,61 @@ states = {
 }
 
 
-def get_lat_long(city_name, country='Germany'):
+def get_lat_long(city_name: str) -> tuple:
+    """
+    This function takes a city name as input and returns a tuple containing the latitude and longitude of the specified city in Germany.
+    Parameters:
+        city_name (str): The name of the city for which the latitude and longitude are to be retrieved.
+    Returns:
+        tuple: A tuple containing the latitude and longitude of the specified city, or None if the location is not found.
+    """
     geolocator = Nominatim(user_agent="my_geocoder")
-    location = geolocator.geocode(f"{city_name}, {country}")
+    location = geolocator.geocode(f"{city_name}, {'Germany'}")
     if location:
         return location.latitude, location.longitude
     else:
         return None
 
 
-def get_weather(city):
+def get_weather_for_city(city: str) -> pd.DataFrame:
+    """
+    Retrieves the weather forecast for a given city.
+
+    Parameters:
+        city (str): The name of the city for which to retrieve the weather forecast.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the wind speed forecast for the specified city.
+    """
     latitude, longitude = get_lat_long(city)
     url = f"https://api.openweathermap.org/data/2.5/forecast?lat={latitude}&lon={longitude}&appid={API_KEY}"
     response = requests.get(url).json()
-    # response = owm_response.json()
     data = {dt['dt']: dt['wind']['speed'] for dt in response['list']}
-    df = pd.DataFrame.from_dict(data, columns=[f'windspeed_{city}'], orient='index')
+    df = pd.DataFrame.from_dict(data, columns=[f'wind_speed_{city}'], orient='index')
     return df
 
 
-def get_weather_for_state(state):
-    df = get_weather(states[state][0])
+def get_weather_for_state(state: str) -> pd.DataFrame:
+    """
+    Retrieves weather data for a given state and returns the aggregated wind speed for the state as a pandas DataFrame.
+
+    Args:
+        state (str): The state for which weather data is to be retrieved.
+
+    Returns:
+        pd.DataFrame: The aggregated wind speed for the state.
+    """
+    df = get_weather_for_city(states[state][0])
     for i in range(1, len(states[state])):
-        df = pd.concat([df, get_weather(states[state][i])], axis=1)
+        df = pd.concat([df, get_weather_for_city(states[state][i])], axis=1)
     return df.aggregate(['mean'], axis=1).rename(columns={'mean': f'wind_speed_{state}'})
 
 
-def get_weather_df():
+def get_weather_df() -> pd.DataFrame:
+    """
+    This function retrieves weather data for each state and concatenates it into a single DataFrame.
+    Returns: pd.DataFrame
+    """
     for i in states:
         if i == 'Hessen':
             weather_df = get_weather_for_state(i)
@@ -63,7 +91,16 @@ def get_weather_df():
     return weather_df
 
 
-def do_interpolation(df):
+def do_interpolation(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    This function interpolates the given DataFrame to get hourly data.
+
+    Args:
+        df (pd.DataFrame): The input DataFrame to be interpolated.
+
+    Returns:
+        pd.DataFrame: The interpolated DataFrame.
+    """
     new_indices = []
     for i in df.index:
         new_indices.append(i + (3600))
@@ -76,6 +113,8 @@ def do_interpolation(df):
 
 
 if __name__ == '__main__':
+
+    # hourly_weather_df = do_interpolation(get_weather_df())
 
     weather_df = get_weather_df()
     hourly_weather_df = do_interpolation(weather_df)
