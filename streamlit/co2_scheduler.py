@@ -15,35 +15,50 @@ pio.templates.default = 'plotly'
 
 
 import streamlit as st
+from streamlit_datetime_range_picker import datetime_range_picker
 
 sys.path.append("..")
 from src.plotting import plot_prediction
+from api import get_weather_df, do_interpolation
 
 
-
-def predict():
+def predict(fetch_data=False):
     # Mock data - replace this with actual weather forecast
     df = pd.read_csv("../data/combined_data.csv")
     df = df.iloc[-24*3:] # Take last three days of training data
+    
+    if fetch_data:
+        weather_df = get_weather_df()
+        hourly_weather_df = do_interpolation(weather_df)
+        hourly_weather_df.to_csv("../data/forecast_0.csv")
+    else:
+        hourly_weather_df = pd.read_csv("../data/forecast_0.csv")
+
+    hourly_weather_df.loc[:, "datetime"] = pd.to_datetime(hourly_weather_df["time_unix"], unit='s')
+    hourly_weather_df.loc[:, 'month'] = hourly_weather_df['datetime'].dt.month
+    hourly_weather_df.loc[:, 'hour'] = hourly_weather_df['datetime'].dt.hour
 
     features = [key for key in df if "wind" in key] + ["month", "hour"]
     model = joblib.load("../models/xgb_1708455353.pkl")
-    co2_predictions = model.predict(df[features])
-    time_axis = df["dt"]
-    return time_axis, co2_predictions
+    co2_predictions = model.predict(hourly_weather_df[features])
+    time_axis = hourly_weather_df["datetime"]
+    df_prediction = pd.DataFrame({'time_axis': time_axis, 'co2_predictions':co2_predictions})
+
+    return df_prediction
 
 # Title
 st.title("CO2 Emissions Predictor")
 if st.button("Make prediction"):
     with st.spinner('AI magic is happening...'):
-        time.sleep(3)
+        #time.sleep(3)
+        df_prediction = predict()
         st.success('Done! 🔥')
-    time_axis, co2_predictions = predict()
-    
+
+    st.write(df_prediction.head())
     # Plot the CO2 emissions over the next 24 hours
     st.subheader("g CO2/kWh prediction for the next 3 days")
 
-    fig = plot_prediction(time_axis, co2_predictions)
+    fig = plot_prediction(df_prediction)
     st.plotly_chart(fig)
 
 
@@ -94,6 +109,9 @@ def generate_task(task_id):
 
 st.title("Task list")
 date = st.date_input('Select date')
+datetime_string = datetime_range_picker(start=0, end=24*5, unit='hours', key='range_picker', 
+                                        picker_button={'is_show': False, 'button_name': 'Refresh last 30min'})
+
                            
 for task in st.session_state["tasks"]:
     task_data = generate_task(task)
