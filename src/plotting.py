@@ -30,14 +30,14 @@ def get_tasks(df=None):
     return tasks_tp
 
 
-def plot_prediction(df):
+def plot_prediction(df, tasks):
     x = df["time_axis"]
     y = df["co2_predictions"]
     fig = px.bar(
         x=x,
         y=y,
     )
-    traces = get_tasks()
+    traces = get_tasks(tasks)
     for trace in traces:
         fig.add_bar(
             x=trace.datetime,
