@@ -21,6 +21,7 @@ from src.plotting import plot_prediction
 from api import get_weather_df, do_interpolation
 import src.co2_dictionary
 from src.model import predict
+from src.co2_calculations import calculate_co2_impact, optimize_schedule
 
 # in units of kW: https://www.daftlogic.com/information-appliance-power-consumption.htm
 co2_dictionary = {
@@ -44,8 +45,10 @@ if "tasks" not in st.session_state:
 if "data" not in st.session_state:
     st.session_state["data"] = None
 
-
+# Title of the app
 st.title("CO2 Emissions Predictor :bulb:")
+
+# Button: Make prediction
 if st.button("Make prediction", key="make_predicion_button"):
     with st.spinner('AI magic is happening...'):
         time.sleep(0)
@@ -61,8 +64,7 @@ if st.session_state.prediction_done == True:
     st.plotly_chart(fig)
 
 
-
-
+# Helper functions to generate task list dynamically
 def add_task():
     element_id = uuid.uuid4()
     st.session_state["tasks"].append(str(element_id))
@@ -79,7 +81,7 @@ def generate_task(task_id):
                                  list(co2_dictionary.keys()),
                                  key=f"task_{task_id}")
     with task_columns[1]:
-        date = st.date_input('Select date', 
+        start_date = st.date_input('Select date', 
                              min_value=datetime.datetime.now(), 
                              max_value=datetime.datetime.now()+datetime.timedelta(days=5),
                              key=f"date_{task_id}") 
@@ -98,14 +100,11 @@ def generate_task(task_id):
         st.button("Remove task", key=f"del_{task_id}",
                   on_click=remove_task, args=[task_id])
 
-    return {"task_type": task_type, "task_duration": task_duration, "start_time": start_time, "start_date": date}
+    return {"task_type": task_type, "task_duration": task_duration, "start_time": start_time, "start_date": start_date}
 
-
+# Task list
 st.title("Task list")
-
-
 task_collection = [] 
-
 
 for task in st.session_state["tasks"]:
     task_data = generate_task(task)
@@ -113,46 +112,43 @@ for task in st.session_state["tasks"]:
 
 st.button("Add task", on_click=add_task)
 
-
-
-def calculate_co2_impact(datetime, duration, consumption):
-    index_start_time =  st.session_state.df_prediction[st.session_state.df_prediction["time_axis"]==datetime].index[0]
-    return consumption*st.session_state.df_prediction[index_start_time:index_start_time+duration]["co2_predictions"].sum()
-
-def optimize_schedule(duration, consumption):
-    g_co2_per_kW = [np.sum(st.session_state.df_prediction["co2_predictions"].iloc[i:i+duration])\
-                    for i in range(len(st.session_state.df_prediction)-duration)]
-    min_g_co2 = np.min(g_co2_per_kW)*consumption
-    max_g_co2 = np.max(g_co2_per_kW)*consumption
-
-    datetime_min_g_co2 = st.session_state.df_prediction["time_axis"].iloc[np.argmin(g_co2_per_kW)]
-
-    return min_g_co2, datetime_min_g_co2, max_g_co2
-
+# If task_collection is larger than 0, start calulations
 if len(task_collection) > 0:
+
     st.subheader("Calculate Co2 footprint")
-    display = st.columns(2)
+    
+    # Create dataframe to save co2 calculations for each task
     data = pd.DataFrame(task_collection)
+
+    # Calculate total consumption of each task
     data.loc[:, "consumption (kW)"] = data["task_type"].apply(
         lambda x: co2_dictionary[x]) * data["task_duration"]
-    data.loc[:, "datetime"] = data["start_time"].apply(
-        lambda time: datetime.datetime.strptime(str(data["start_date"].iloc[0])+'-'+str(time), "%Y-%m-%d-%H"))
-
-   
-    index_start_time =  st.session_state.df_prediction[st.session_state.df_prediction["time_axis"]==data["datetime"].iloc[0]].index[0]
-
-    data.loc[:, "CO2 impact (g)"] = [calculate_co2_impact(data["datetime"].iloc[i], data["task_duration"].iloc[i], data["consumption (kW)"].iloc[i]) \
-                  for i in range(len(data))]
-
     
-    optimized = [(optimize_schedule(data["task_duration"].iloc[i], data["consumption (kW)"].iloc[i])) \
-                 for i in range(len(data))]
-    
+    # Calculate datetime for each task from start_time     
+    datetime_strings = [str(data["start_date"].iloc[i])+"-"+str(data["start_time"].iloc[i]) for i in range(len(data))]
+    data.loc[:, "datetime"] = [datetime.datetime.strptime(t, "%Y-%m-%d-%H") for t in datetime_strings]
+
+    # Calculate CO2 impact for each task
+    data.loc[:, "CO2 impact (g)"] = [calculate_co2_impact(data["datetime"].iloc[i], \
+                                                          data["task_duration"].iloc[i], \
+                                                          data["consumption (kW)"].iloc[i],
+                                                          st.session_state.df_prediction) \
+                                                            for i in range(len(data))]
+
+    # Calculate optimal co2 impact and optimal time for each task
+    optimized = [(optimize_schedule(data["task_duration"].iloc[i], \
+                                    data["consumption (kW)"].iloc[i], \
+                                    st.session_state.df_prediction)) \
+                                    for i in range(len(data))]
+
     data.loc[:, "optimized CO2 impact (g)"] = [opt[0] for opt in optimized]
     data.loc[:, "optimal datetime"] = [opt[1] for opt in optimized]
     data.loc[:, "worst CO2 impact (g)"] = [opt[2] for opt in optimized]
-    st.session_state["data"] = data
     
+    # Save session state
+    st.session_state["data"] = data
+
+    # Print optimized schedule
     st.subheader("Here is an optimized schedule:")
     st.write(data[["task_type", "datetime", "optimal datetime", "CO2 impact (g)", "optimized CO2 impact (g)"]])
 
@@ -164,7 +160,8 @@ if len(task_collection) > 0:
     st.write(f"reduce CO2 emissions by {-(total_co2_optimized-total_co2_selected)/1e3:.2f} kg!")
     st.write(f"This is a reduction by {-int(100-100*total_co2_selected/total_co2_optimized)} %!")
 
-    st.subheader("test")
+    # Plot optimization progress bar
+    st.subheader("Optimization progress")
     val = (total_co2_selected-total_co2_worst_case)/(total_co2_optimized-total_co2_worst_case)
     x = np.linspace(0, 1, 101)
     x[x > val] = None
@@ -179,6 +176,9 @@ if len(task_collection) > 0:
     plt.tight_layout()
 
     st.pyplot(fig)
-    st.experimental_rerun() 
+
+    # Trigger rerun, important to update plot 
+    st.experimental_rerun()   
+
 
 
