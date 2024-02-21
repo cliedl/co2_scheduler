@@ -5,10 +5,11 @@ import pandas as pd
 import numpy as np
 
 
-def get_tasks(tasks=None):
-    if tasks is None:
+def get_tasks(df=None):
+    if df is None:
         return []
-
+    else:
+        tasks = df.copy()
     for task in tasks.task_type:
         # date_time = datetime.datetime.fromisoformat(tasks[tasks.task_type == task].datetime.iloc[0])
         date_time = tasks[tasks.task_type == task].datetime.iloc[0]
