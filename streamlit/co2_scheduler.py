@@ -6,9 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.express as px
 import datetime
-import joblib
 import time
-import requests
 
 import plotly.io as pio
 pio.templates.default = 'plotly' 
@@ -31,7 +29,6 @@ co2_dictionary = {
     "A100 GPU": 0.5
 }
 
-
 # Initialize session states
 if 'prediction_done' not in st.session_state:
     st.session_state.prediction_done = None
@@ -44,6 +41,9 @@ if "tasks" not in st.session_state:
 
 if "data" not in st.session_state:
     st.session_state["data"] = None
+
+if "task_collection" not in st.session_state:
+    st.session_state["task_collection"] = []
 
 # Title of the app
 st.title("CO2 Emissions Predictor :bulb:")
@@ -114,8 +114,7 @@ st.button("Add task", on_click=add_task)
 
 # If task_collection is larger than 0, start calulations
 if len(task_collection) > 0:
-
-    st.subheader("Calculate Co2 footprint")
+    st.subheader("Calculate CO2 footprint")
     
     # Create dataframe to save co2 calculations for each task
     data = pd.DataFrame(task_collection)
@@ -177,8 +176,12 @@ if len(task_collection) > 0:
 
     st.pyplot(fig)
 
-    # Trigger rerun, important to update plot 
+
+# Rerun app if change in taks_collection is detected
+if st.session_state["task_collection"] != task_collection:
+    st.session_state["task_collection"] = task_collection
     st.experimental_rerun()   
+
 
 
 
