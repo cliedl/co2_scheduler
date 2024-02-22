@@ -1,7 +1,7 @@
 # co2_scheduler
 Demo of a web app to optimize the schedule of electricity-intensive tasks to reduce the CO2 footprint.
 
-[Here](data/co2_scheduler_demo.webm) is a short video to showcase the main functionality.
+[Here](data/co2_scheduler_demo.webm) is a short video to showcase the main functionality (Depending on the browser, the link will initialize a download. In this case, simply open the downloaded video in the browser)
 
 The app is currently deployed on [co2-scheduler.streamlit.app](co2-scheduler.streamlit.app), but might not be maintained in the future.
 
